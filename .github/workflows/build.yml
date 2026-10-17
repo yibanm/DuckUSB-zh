@@ -284,7 +284,12 @@ jobs:
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
           VERSION="${TAG#zygisk-v}"
-          ASSETS=(DuckUSB-Zygisk-*.zip DuckUSB-zygisk-manager.apk)
+          # The zip already carries the version (DuckUSB-Zygisk-<ver>-release.zip); the
+          # manager APK does not, so rename it to match before publishing.
+          ZIP=$(ls DuckUSB-Zygisk-*.zip)
+          MGR="DuckUSB-zygisk-manager-${VERSION}.apk"
+          mv DuckUSB-zygisk-manager.apk "$MGR"
+          ASSETS=("$ZIP" "$MGR")
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::warning::$TAG already exists; replacing its assets."
             gh release upload "$TAG" "${ASSETS[@]}" \
