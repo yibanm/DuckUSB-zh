@@ -84,7 +84,11 @@ jobs:
         # path without warning, so the packaged bytes are checked, not the source tree.
         run: |
           set -euo pipefail
-          APK=app/build/outputs/apk/release/app-release.apk
+          # Without the signing secrets the release APK is app-release-unsigned.apk; with
+          # them it is app-release.apk. Resolve whichever was actually produced so a fork
+          # that builds unsigned still verifies (and the same file is what gets shipped).
+          APK=$(ls app/build/outputs/apk/release/app-release*.apk | head -1)
+          test -n "$APK" || { echo "no release APK produced"; exit 1; }
           LIST=$(unzip -l "$APK")
           mkdir -p _check
 
@@ -137,8 +141,9 @@ jobs:
       - name: Stage artifacts
         run: |
           set -euo pipefail
-          cp app/build/outputs/apk/release/app-release.apk ./DuckUSB-xposed.apk
-          cp zygisk/app/build/outputs/apk/release/app-release.apk ./DuckUSB-zygisk-manager.apk
+          # Same signed/unsigned split as the verify step: take whichever name AGP produced.
+          cp "$(ls app/build/outputs/apk/release/app-release*.apk | head -1)" ./DuckUSB-xposed.apk
+          cp "$(ls zygisk/app/build/outputs/apk/release/app-release*.apk | head -1)" ./DuckUSB-zygisk-manager.apk
           cp zygisk/zygote/build/outputs/magisk/release/*.zip ./
           ls -l ./*.apk ./*.zip
 
